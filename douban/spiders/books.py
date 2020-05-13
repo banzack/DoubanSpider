@@ -3,6 +3,7 @@ import os
 import csv
 import logging
 import time
+import re
 from scrapy.http import Request
 from douban.items import BookItem
 from douban.email import send_email
@@ -10,6 +11,7 @@ from douban.definitions import ROOT_DIR
 from douban.definitions import CSV_DIR
 from douban.definitions import HTML_DIR
 
+RE_WHITESPACES = re.compile(r"\s+")
 
 class BookSpider(scrapy.Spider):
     name = "book"
@@ -118,19 +120,26 @@ class BookSpider(scrapy.Spider):
             img_url_elem = response.xpath("//*[@id='mainpic']/a/img/@src")
             img_url = img_url_elem.get().strip() if img_url_elem else None
 
-            authors_elem = response.xpath("//div[@id='info']//span[text()=' 作者']/following-sibling::a/text()")
+
+            authors_elem = response.xpath("""//div[@id='info']//span[text()='作者:']/following-sibling::br[1]/
+                preceding-sibling::a[preceding-sibling::span[text()='作者:']]/text()""")
+            if not authors_elem:
+                authors_elem = response.xpath("//div[@id='info']//span[text()=' 作者']/following-sibling::a/text()")
             if authors_elem:
                 authors = []
                 for author in authors_elem:
-                    authors.append(author.get().strip())
+                    authors.append(RE_WHITESPACES.sub(' ', author.get().strip()))
             else:
                 authors = None
 
-            translators_elem = response.xpath("//div[@id='info']//span[text()=' 译者']/following-sibling::a/text()")
+            translators_elem = response.xpath("""//div[@id='info']//span[text()='译者:']/following-sibling::br[1]/
+                preceding-sibling::a[preceding-sibling::span[text()='译者:']]/text()""")
+            if not translators_elem:
+                translators_elem = response.xpath("//div[@id='info']//span[text()=' 译者']/following-sibling::a/text()")
             if translators_elem:
                 translators = []
                 for translator in translators_elem:
-                    translators.append(translator.get().strip())
+                    translators.append(RE_WHITESPACES.sub(' ', translator.get().strip()))
             else:
                 translators = None
 
