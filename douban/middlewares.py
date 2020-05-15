@@ -117,3 +117,15 @@ class LuminatiProxyMiddleware:
     def __generate_random_id(self):
         chars = string.ascii_letters + string.digits
         return ''.join(random.choice(chars) for i in range(random.randint(5,25)))
+
+class RandomUserAgentMiddleware:
+    def __init__(self, settings):
+        from fake_useragent import UserAgent
+        self.ua  = UserAgent()
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler.settings)
+
+    def process_request(self, request, spider):
+        request.headers.setdefault('User-Agent', self.ua.chrome)
